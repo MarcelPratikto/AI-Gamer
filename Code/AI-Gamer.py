@@ -27,7 +27,8 @@ classes = ["background", "person", "bicycle", "car", "motorcycle",
 colors = np.random.uniform(0, 255, size=(len(classes), 3))
  
 # Open the webcam
-cam = cv.VideoCapture(1, cv.CAP_DSHOW)
+# switch between 0 or 1 if the correct webcam isn't showing
+cam = cv.VideoCapture(0, cv.CAP_DSHOW)
 cam.set(cv.CAP_PROP_FRAME_WIDTH, 1024)
 cam.set(cv.CAP_PROP_FRAME_HEIGHT, 768)
  
@@ -37,16 +38,17 @@ pbt = 'Code/ssd_inception_v2_coco_2017_11_17.pbtxt'
 # Read the neural network
 cvNet = cv.dnn.readNetFromTensorflow(pb,pbt)   
 
-# Make sure that Rocket League is running
-# then switch focus to it
+# Make sure that Rocket League is running then switch focus to it
 RL = pyautogui.getWindowsWithTitle("Rocket League")[0]
 RL.activate()
 
 # TODO keys
-FORWARD = 'W'
-BACKWARD = 'S'
-LEFT = 'A'
-RIGHT = 'D'
+# MAKE SURE LETTERS ARE IN LOWERCASE OR pyKey WILL HOLD SHIFT!!!
+#seq_keys = []
+FORWARD = 'w'
+BACKWARD = 's'
+LEFT = 'a'
+RIGHT = 'd'
 JUMP = 'SPACEBAR'
 
 # TODO Last known position of ball
@@ -54,9 +56,6 @@ JUMP = 'SPACEBAR'
 ball_x = 0
 ball_y = 0
 ball_width = 0
-
-# TODO random ???
-#random.seed()
 
 while True:
 
@@ -112,16 +111,17 @@ while True:
     press(key=JUMP)
   else:
   # TODO if ball was not detected
-    r = random.randint(1,4)
-    print(r)
-    if r == 1:
-      press(key=FORWARD)
-    elif r == 2:
-      press(key=BACKWARD)
-    elif r == 3:
-      press(key=LEFT)
-    else:
-      press(key=RIGHT)
+    press(key=FORWARD, sec=1)
+    # r = random.randint(1,4)
+    # #print(r)
+    # if r == 1:
+    #   press(key=FORWARD, sec=1)
+    # elif r == 2:
+    #   press(key=BACKWARD, sec=1)
+    # elif r == 3:
+    #   press(key=LEFT, sec=1)
+    # else:
+    #   press(key=RIGHT, sec=1)
  
 # Stop filming
 cam.release()
