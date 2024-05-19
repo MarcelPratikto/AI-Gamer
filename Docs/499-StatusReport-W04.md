@@ -10,25 +10,23 @@
 
 **Number of hours worked since last update:** 9
 
-**Number of hours worked on the project thus far:** 27
+**Number of hours worked on the project thus far:** 45
 
 **Total number of hours anticipated for completion:** 130
 
 **Accomplishments:**
 
-* Got OpenCV working, and it is able to detect a ball in the game
-* Tweaked the keyboard script since some buttons were not working correctly
+* Created a "zig-zag" movement algorithm in order for the player character to move closer to the ball. Once closer, OpenCV has an easier time identifying the ball.
 
 **Challenges:**
 
-* The script requires some fine-tuning for better movements in-game
 * Find a better way to move the player so that the webcam can detect the ball. If the ball is away from the player, the webcam will not detect the ball and the program doesn't know what to do.
+* OpenCV identifies any spherical looking object as a ball, figure out how to filter out the non-ball objects or work around it.
 
 **Plans / Goals for next week:**
 
-1. Buy tripod for webcam so that it can face my screen and stay in the same position
-2. Continue working on the synchronization between player movement and ball position
-3. Combine OpenCV with the script to move the player character to a ball when it detects it
+1. Continue working on the synchronization between player movement and ball position
+2. Figure out what to do when OpenCV detects the ball. Might have to use some math to figure out trajectory projections.
 
 **Accountability plan: (What is your plan to keep yourself honest and follow through with the goals that you have outlined?)**
 

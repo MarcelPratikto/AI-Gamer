@@ -7,6 +7,7 @@ import cv2 as cv # OpenCV computer vision library
 import numpy as np # Scientific computing library
 import pyautogui
 from pyKey import pressKey, releaseKey, press, sendSequence, showKeys
+import time
 import random
  
 # Just use a subset of the classes
@@ -29,8 +30,10 @@ colors = np.random.uniform(0, 255, size=(len(classes), 3))
 # Open the webcam
 # switch between 0 or 1 if the correct webcam isn't showing
 cam = cv.VideoCapture(0, cv.CAP_DSHOW)
-cam.set(cv.CAP_PROP_FRAME_WIDTH, 1024)
-cam.set(cv.CAP_PROP_FRAME_HEIGHT, 768)
+WIDTH = 1024
+HEIGHT = 768
+cam.set(cv.CAP_PROP_FRAME_WIDTH, WIDTH)
+cam.set(cv.CAP_PROP_FRAME_HEIGHT, HEIGHT)
  
 pb  = 'Code/frozen_inference_graph.pb'
 pbt = 'Code/ssd_inception_v2_coco_2017_11_17.pbtxt'
@@ -57,16 +60,20 @@ ball_x = 0
 ball_y = 0
 ball_width = 0
 
+# TODO start with ball not detected
+ball_detected = False
+initial_move = 0.0
+
+# TODO zig-zag until ball is detected
+zig = 0.0
+zag = False
+
 while True:
-
-  # TODO start with ball not detected
-  ball_detected = False
-
   # Read in the frame
   ret_val, img = cam.read()
   rows = img.shape[0]
   cols = img.shape[1]
-  cvNet.setInput(cv.dnn.blobFromImage(img, size=(1024, 768), swapRB=True, crop=False)) # default size=(300,300)
+  cvNet.setInput(cv.dnn.blobFromImage(img, size=(WIDTH, HEIGHT), swapRB=True, crop=False)) # default size=(300,300), alternates: (1024,768), (800,600)
  
   # Run object detection
   cvOut = cvNet.forward()
@@ -74,7 +81,7 @@ while True:
   # Go through each object detected and label it
   for detection in cvOut[0,0,:,:]:
     score = float(detection[2])
-    if score > 0.3:
+    if score > 0.7:
  
       idx = int(detection[1])   # prediction class index. 
  
@@ -85,19 +92,25 @@ while True:
         right = detection[5] * cols
         bottom = detection[6] * rows
         cv.rectangle(img, (int(left), int(top)), (int(right), int(bottom)), (23, 230, 210), thickness=2)
-            
+
+        
+        # store the ball position
+        ball_x = left
+        ball_y = bottom
+        ball_width = right - left
+        # tell the program we detected a ball
+        # if ball_width > 50.0:
+        #   ball_detected = True
+        #   #print(f"Ball x:{ball_x}, y:{ball_y}, width:{ball_width}")
+        ball_detected = True
+
         # draw the prediction on the frame        
         # label = "{}: {:.2f}%".format(classes[idx],score * 100)
-        x = left
-        y = bottom
-        width = right - left
-
-        label = "x:{:.2f}, y:{:.2f}, width:{:.2f}".format(x, y, width)
+        label = "x:{:.2f}, y:{:.2f}, width:{:.2f}".format(ball_x, ball_y, ball_width)
         y = top - 15 if top - 15 > 15 else top + 15
-        cv.putText(img, label, (int(left), int(y)),cv.FONT_HERSHEY_SIMPLEX, 0.5, colors[idx], 2)
-        
-        # TODO tell the program if we detected a ball
-        ball_detected = True
+        # cv.putText(img, label, (int(left), int(y)),cv.FONT_HERSHEY_SIMPLEX, 0.5, colors[idx], 2)
+        # (image, text, point, font face, font scale, color, thickness)
+        cv.putText(img, label, (int(left), int(y)), cv.FONT_HERSHEY_SIMPLEX, 0.75, (0,0,255), 2)
  
   # Display the frame
   cv.imshow('my webcam', img)
@@ -108,20 +121,32 @@ while True:
 
   if ball_detected:
   # TODO Do actions if ball was detected
-    press(key=JUMP)
+    # press(key=JUMP, sec=1)
+    r = random.randint(1,3)
   else:
   # TODO if ball was not detected
-    press(key=FORWARD, sec=1)
-    # r = random.randint(1,4)
-    # #print(r)
-    # if r == 1:
-    #   press(key=FORWARD, sec=1)
-    # elif r == 2:
-    #   press(key=BACKWARD, sec=1)
-    # elif r == 3:
-    #   press(key=LEFT, sec=1)
-    # else:
-    #   press(key=RIGHT, sec=1)
+    if initial_move == 0.0:
+      press(key=FORWARD, sec=2)
+      initial_move = time.time()
+    current_time = time.time()
+    if current_time - initial_move > 3.0:
+      if zig == 0.0:
+        pressKey(key=FORWARD)
+        press(key=LEFT, sec=1)
+        releaseKey(key=FORWARD)
+        zig = time.time()
+      else:
+        current_time = time.time()
+        time_elapsed = current_time - zig
+        if not zag and (time_elapsed > 3.0):
+          pressKey(key=FORWARD)
+          press(key=RIGHT, sec=1)
+          releaseKey(key=FORWARD)
+          zag = True
+        else:
+          if time_elapsed > 6.0:
+            zig = 0.0
+            zag = False
  
 # Stop filming
 cam.release()
