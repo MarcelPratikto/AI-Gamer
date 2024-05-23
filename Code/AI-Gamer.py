@@ -9,6 +9,7 @@ import pyautogui
 from pyKey import pressKey, releaseKey, press, sendSequence, showKeys
 import time
 import random
+import vgamepad as vg
  
 # Just use a subset of the classes
 classes = ["background", "person", "bicycle", "car", "motorcycle",
@@ -22,7 +23,7 @@ classes = ["background", "person", "bicycle", "car", "motorcycle",
   "pizza", "donut", "cake", "chair", "couch", "potted plant", "bed", "unknown", "dining table",
   "unknown", "unknown", "toilet", "unknown", "tv", "laptop", "mouse", "remote", "keyboard",
   "cell phone", "microwave", "oven", "toaster", "sink", "refrigerator", "unknown",
-  "book", "clock", "vase", "scissors", "teddy bear", "hair drier", "toothbrush" ]
+  "book", "clock", "vase", "scissors", "teddy bear", "hair drier", "toothbrush"]
  
 # Colors we will use for the object labels
 colors = np.random.uniform(0, 255, size=(len(classes), 3))
@@ -41,6 +42,8 @@ pbt = 'Code/ssd_inception_v2_coco_2017_11_17.pbtxt'
 # Read the neural network
 cvNet = cv.dnn.readNetFromTensorflow(pb,pbt)   
 
+# activate gamepad
+gamepad = vg.VX360Gamepad()
 # Make sure that Rocket League is running then switch focus to it
 RL = pyautogui.getWindowsWithTitle("Rocket League")[0]
 RL.activate()
@@ -67,6 +70,10 @@ initial_move = 0.0
 # TODO zig-zag until ball is detected
 zig = 0.0
 zag = False
+
+# TODO start_time
+# zig, wait 3 secs, zag, wait 3 secs, repeat
+start_time = time.time()
 
 while True:
   # Read in the frame
@@ -125,28 +132,70 @@ while True:
     r = random.randint(1,3)
   else:
   # TODO if ball was not detected
-    if initial_move == 0.0:
-      press(key=FORWARD, sec=2)
-      initial_move = time.time()
+  # keyboard
+    # if initial_move == 0.0:
+    #   press(key=FORWARD, sec=2)
+    #   initial_move = time.time()
+    # current_time = time.time()
+    # if current_time - initial_move > 3.0:
+    #   if zig == 0.0:
+    #     pressKey(key=FORWARD)
+    #     press(key=LEFT, sec=1)
+    #     releaseKey(key=FORWARD)
+    #     zig = time.time()
+    #   else:
+    #     current_time = time.time()
+    #     time_elapsed = current_time - zig
+    #     if not zag and (time_elapsed > 3.0):
+    #       pressKey(key=FORWARD)
+    #       press(key=RIGHT, sec=1)
+    #       releaseKey(key=FORWARD)
+    #       zag = True
+    #     else:
+    #       if time_elapsed > 6.0:
+    #         zig = 0.0
+    #         zag = False
+  # gamepad
+    # if initial_move == 0.0:
+    #   gamepad.right_trigger_float(1.0)
+    #   initial_move = time.time()
+    # current_time = time.time()
+    # if current_time - initial_move > 3.0:
+    #   if zig == 0.0:
+    #     gamepad.left_joystick_float(x_value_float=-0.5, y_value_float=0.5)
+    #     gamepad.right_trigger_float(0.5)
+    #     zig = time.time()
+    #   else:
+    #     time_elapsed = current_time - zig
+    #     if not zag and (time_elapsed > 3.0):
+    #       gamepad.left_joystick_float(x_value_float=0.5, y_value_float=0.5)
+    #       gamepad.right_trigger_float(0.5)
+    #       zag = True
+    #     else:
+    #       if time_elapsed > 6.0:
+    #         zig = 0.0
+    #         zag = False
+    # # gamepad.left_joystick_float(x_value_float=-0.5, y_value_float=0.5)
+    # # gamepad.right_trigger_float(0.5)
+    # gamepad.update()
+
     current_time = time.time()
-    if current_time - initial_move > 3.0:
-      if zig == 0.0:
-        pressKey(key=FORWARD)
-        press(key=LEFT, sec=1)
-        releaseKey(key=FORWARD)
-        zig = time.time()
+    diff_time = current_time - start_time
+    if diff_time < 2.0:
+      gamepad.right_trigger_float(1.0)
+      gamepad.update()
+    else:
+      if 5.0 < diff_time < 6.0:
+        gamepad.left_joystick_float(x_value_float=-0.5, y_value_float=0.5)
+        gamepad.right_trigger_float(0.5)
+        gamepad.update()
+      elif 9.0 < diff_time < 10.0:
+        gamepad.left_joystick_float(x_value_float=0.5, y_value_float=0.5)
+        gamepad.right_trigger_float(0.5)
+        gamepad.update()
       else:
-        current_time = time.time()
-        time_elapsed = current_time - zig
-        if not zag and (time_elapsed > 3.0):
-          pressKey(key=FORWARD)
-          press(key=RIGHT, sec=1)
-          releaseKey(key=FORWARD)
-          zag = True
-        else:
-          if time_elapsed > 6.0:
-            zig = 0.0
-            zag = False
+        gamepad.reset()
+        gamepad.update()
  
 # Stop filming
 cam.release()
