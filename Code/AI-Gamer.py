@@ -190,7 +190,15 @@ while True:
         gamepad.right_trigger_float(0.5)
         gamepad.update()
       elif 9.0 < diff_time < 10.0:
-        gamepad.left_joystick_float(x_value_float=0.5, y_value_float=0.5)
+        gamepad.left_joystick_float(x_value_float=1.0, y_value_float=0.5)
+        gamepad.right_trigger_float(0.5)
+        gamepad.update()
+      elif 11.0 < diff_time < 12.0:
+        gamepad.left_joystick_float(x_value_float=0.0, y_value_float=0.0)
+        gamepad.right_trigger_float(0.5)
+        gamepad.update()
+      elif 15.0 < diff_time < 16.0:
+        gamepad.left_joystick_float(x_value_float=-1, y_value_float=0.5)
         gamepad.right_trigger_float(0.5)
         gamepad.update()
       else:
