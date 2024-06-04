@@ -1,16 +1,117 @@
-# Project: AI Gamer
-# Author: Marcel Pratikto
-# Date created: May 4, 2024
-# Description: This program uses AI to play the game Rocket League
- 
-import cv2 as cv # OpenCV computer vision library
-import numpy as np # Scientific computing library
-import pyautogui
-from pyKey import pressKey, releaseKey, press, sendSequence, showKeys
-import time
-import random
+"""
+Project: AI Gamer
+Author: Marcel Pratikto
+Date created: May 4, 2024
+Description: This program uses AI to play the game Rocket League
+"""
+
+#-------------------------------------------------------------------------------------------------------
+# IMPORTS
+#-------------------------------------------------------------------------------------------------------
+import cv2 as cv    # OpenCV computer vision library
+import numpy as np  # Scientific computing library
+import time         # 
+import pyautogui    # switch focus between programs
+import csv
+import os.path
+# gamepad related stuff
 import vgamepad as vg
- 
+from inputs import get_gamepad
+import math
+import threading
+
+#-------------------------------------------------------------------------------------------------------
+# XBOX Controller Class
+#-------------------------------------------------------------------------------------------------------
+class XboxController(object):
+  MAX_TRIG_VAL = math.pow(2, 8)
+  MAX_JOY_VAL = math.pow(2, 15)
+
+  def __init__(self):
+    self.LeftJoystickY = 0
+    self.LeftJoystickX = 0
+    self.RightJoystickY = 0
+    self.RightJoystickX = 0
+    self.LeftTrigger = 0
+    self.RightTrigger = 0
+    self.LeftBumper = 0
+    self.RightBumper = 0
+    self.A = 0
+    self.X = 0
+    self.Y = 0
+    self.B = 0
+    self.LeftThumb = 0
+    self.RightThumb = 0
+    self.Back = 0
+    self.Start = 0
+    self.LeftDPad = 0
+    self.RightDPad = 0
+    self.UpDPad = 0
+    self.DownDPad = 0
+
+    self._monitor_thread = threading.Thread(target=self._monitor_controller, args=())
+    self._monitor_thread.daemon = True
+    self._monitor_thread.start()
+
+  def read(self): # return the buttons/triggers that you care about in this methode
+    x = self.LeftJoystickX
+    y = self.LeftJoystickY
+    rt = self.RightTrigger
+    lt = self.LeftTrigger
+    X = self.X # b=1, x=2
+    A = self.A
+    B = self.B
+    reset_button = self.LeftThumb
+    return [x, y, rt, lt, X, A, B, reset_button]
+
+  def _monitor_controller(self):
+    while True:
+      events = get_gamepad()
+      for event in events:
+        if event.code == 'ABS_Y':
+          self.LeftJoystickY = event.state / XboxController.MAX_JOY_VAL # normalize between -1 and 1
+        elif event.code == 'ABS_X':
+          self.LeftJoystickX = event.state / XboxController.MAX_JOY_VAL # normalize between -1 and 1
+        elif event.code == 'ABS_RY':
+          self.RightJoystickY = event.state / XboxController.MAX_JOY_VAL # normalize between -1 and 1
+        elif event.code == 'ABS_RX':
+          self.RightJoystickX = event.state / XboxController.MAX_JOY_VAL # normalize between -1 and 1
+        elif event.code == 'ABS_Z':
+          self.LeftTrigger = event.state / XboxController.MAX_TRIG_VAL # normalize between 0 and 1
+        elif event.code == 'ABS_RZ':
+          self.RightTrigger = event.state / XboxController.MAX_TRIG_VAL # normalize between 0 and 1
+        elif event.code == 'BTN_TL':
+          self.LeftBumper = event.state
+        elif event.code == 'BTN_TR':
+          self.RightBumper = event.state
+        elif event.code == 'BTN_SOUTH':
+          self.A = event.state
+        elif event.code == 'BTN_NORTH':
+          self.Y = event.state #previously switched with X
+        elif event.code == 'BTN_WEST':
+          self.X = event.state #previously switched with Y
+        elif event.code == 'BTN_EAST':
+          self.B = event.state
+        elif event.code == 'BTN_THUMBL':
+          self.LeftThumb = event.state
+        elif event.code == 'BTN_THUMBR':
+          self.RightThumb = event.state
+        elif event.code == 'BTN_SELECT':
+          self.Back = event.state
+        elif event.code == 'BTN_START':
+          self.Start = event.state
+        elif event.code == 'BTN_TRIGGER_HAPPY1':
+          self.LeftDPad = event.state
+        elif event.code == 'BTN_TRIGGER_HAPPY2':
+          self.RightDPad = event.state
+        elif event.code == 'BTN_TRIGGER_HAPPY3':
+          self.UpDPad = event.state
+        elif event.code == 'BTN_TRIGGER_HAPPY4':
+          self.DownDPad = event.state
+
+#-------------------------------------------------------------------------------------------------------
+# OPENCV
+#-------------------------------------------------------------------------------------------------------
 # Just use a subset of the classes
 classes = ["background", "person", "bicycle", "car", "motorcycle",
   "airplane", "bus", "train", "truck", "boat", "traffic light", "fire hydrant",
@@ -24,7 +125,7 @@ classes = ["background", "person", "bicycle", "car", "motorcycle",
   "unknown", "unknown", "toilet", "unknown", "tv", "laptop", "mouse", "remote", "keyboard",
   "cell phone", "microwave", "oven", "toaster", "sink", "refrigerator", "unknown",
   "book", "clock", "vase", "scissors", "teddy bear", "hair drier", "toothbrush"]
- 
+
 # Colors we will use for the object labels
 colors = np.random.uniform(0, 255, size=(len(classes), 3))
  
@@ -38,41 +139,101 @@ cam.set(cv.CAP_PROP_FRAME_HEIGHT, HEIGHT)
  
 pb  = 'Code/frozen_inference_graph.pb'
 pbt = 'Code/ssd_inception_v2_coco_2017_11_17.pbtxt'
- 
+
 # Read the neural network
 cvNet = cv.dnn.readNetFromTensorflow(pb,pbt)   
 
-# activate gamepad
-gamepad = vg.VX360Gamepad()
+#-------------------------------------------------------------------------------------------------------
+# GAMEPAD, CSV
+#-------------------------------------------------------------------------------------------------------
+# TODO Save gamepad controls to csv file to train AI model
+csv_file_path = "Code/sample.csv"
+is_file_new = True
+if os.path.isfile(csv_file_path): # if file already exist, it is not new and we don't need to csv_writer.writeheader()
+  is_file_new = False
+csv_file = open(csv_file_path, "a", newline="")
+field_names = [
+  "time_elapsed",
+  "ball_detected",
+  "ball_x",
+  "ball_y",
+  "ball_width",
+  "joystick_x",
+  "joystick_y",
+  "RT_intensity",
+  "LT_intensity",
+  "btn_X",
+  "btn_A",
+  "btn_B"
+]
+csv_writer = csv.DictWriter(csv_file, fieldnames=field_names)
+# TODO only writeheader when starting a new csv file to store data in
+if is_file_new:
+  csv_writer.writeheader()
+
+# TODO activate gamepad
+# Only activate when NOT storing gamepad inputs to csv file
+# gamepad = vg.VX360Gamepad()
+
+# TODO xbox controller for monitoring inputs
+# Only activate when storing gamepad inputs to csv file
+xbc = XboxController()
+
+#-------------------------------------------------------------------------------------------------------
+# BALL
+#-------------------------------------------------------------------------------------------------------
+# Last known position of ball on the screen
+ball_x = -1
+ball_y = -1
+# How close the ball is to the screen
+ball_width = -1
+
+# start with ball not detected
+ball_detected = False
+
+# TODO if ball is detected
+def ball_detected_action():
+  # gamepad.reset()
+  # gamepad.update()
+  return
+
+# TODO if ball is NOT detected
+def ball_not_detected_action(start_time):
+  #   current_time = time.time()
+  #   diff_time = current_time - start_time
+  #   if diff_time < 2.0:
+  #     gamepad.right_trigger_float(1.0)
+  #     gamepad.update()
+  #   else:
+  #     if 5.0 < diff_time < 6.0:
+  #       gamepad.left_joystick_float(x_value_float=-0.5, y_value_float=0.5)
+  #       gamepad.right_trigger_float(0.5)
+  #       gamepad.update()
+  #     elif 9.0 < diff_time < 10.0:
+  #       gamepad.left_joystick_float(x_value_float=1.0, y_value_float=0.5)
+  #       gamepad.right_trigger_float(0.5)
+  #       gamepad.update()
+  #     elif 11.0 < diff_time < 12.0:
+  #       gamepad.left_joystick_float(x_value_float=0.0, y_value_float=0.0)
+  #       gamepad.right_trigger_float(0.5)
+  #       gamepad.update()
+  #     elif 15.0 < diff_time < 16.0:
+  #       gamepad.left_joystick_float(x_value_float=-1, y_value_float=0.5)
+  #       gamepad.right_trigger_float(0.5)
+  #       gamepad.update()
+  #     else:
+  #       gamepad.reset()
+  #       gamepad.update()
+  return
+
+#-------------------------------------------------------------------------------------------------------
+# MAIN LOOP
+#-------------------------------------------------------------------------------------------------------
 # Make sure that Rocket League is running then switch focus to it
 RL = pyautogui.getWindowsWithTitle("Rocket League")[0]
 RL.activate()
 
-# TODO keys
-# MAKE SURE LETTERS ARE IN LOWERCASE OR pyKey WILL HOLD SHIFT!!!
-#seq_keys = []
-FORWARD = 'w'
-BACKWARD = 's'
-LEFT = 'a'
-RIGHT = 'd'
-JUMP = 'SPACEBAR'
-
-# TODO Last known position of ball
-# TODO use size as an indicator if ball is coming towards the player or moving away
-ball_x = 0
-ball_y = 0
-ball_width = 0
-
-# TODO start with ball not detected
-ball_detected = False
-initial_move = 0.0
-
-# TODO zig-zag until ball is detected
-zig = 0.0
-zag = False
-
-# TODO start_time
-# zig, wait 3 secs, zag, wait 3 secs, repeat
+# sytem time of when the program starts
 start_time = time.time()
 
 while True:
@@ -80,11 +241,17 @@ while True:
   ret_val, img = cam.read()
   rows = img.shape[0]
   cols = img.shape[1]
-  cvNet.setInput(cv.dnn.blobFromImage(img, size=(WIDTH, HEIGHT), swapRB=True, crop=False)) # default size=(300,300), alternates: (1024,768), (800,600)
+  w = 600
+  h = 600
+  cvNet.setInput(cv.dnn.blobFromImage(img, size=(w, h), swapRB=True, crop=False)) # default size=(300,300)
  
   # Run object detection
   cvOut = cvNet.forward()
- 
+
+  # time elapsed since starting this program
+  current_time = time.time()
+  time_elapsed = current_time - start_time
+
   # Go through each object detected and label it
   for detection in cvOut[0,0,:,:]:
     score = float(detection[2])
@@ -100,15 +267,11 @@ while True:
         bottom = detection[6] * rows
         cv.rectangle(img, (int(left), int(top)), (int(right), int(bottom)), (23, 230, 210), thickness=2)
 
-        
         # store the ball position
         ball_x = left
         ball_y = bottom
         ball_width = right - left
         # tell the program we detected a ball
-        # if ball_width > 50.0:
-        #   ball_detected = True
-        #   #print(f"Ball x:{ball_x}, y:{ball_y}, width:{ball_width}")
         ball_detected = True
 
         # draw the prediction on the frame        
@@ -118,95 +281,57 @@ while True:
         # cv.putText(img, label, (int(left), int(y)),cv.FONT_HERSHEY_SIMPLEX, 0.5, colors[idx], 2)
         # (image, text, point, font face, font scale, color, thickness)
         cv.putText(img, label, (int(left), int(y)), cv.FONT_HERSHEY_SIMPLEX, 0.75, (0,0,255), 2)
- 
+
+  #TODO write to csv file
+  #datetime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(current_time))
+  #print(xbc.read())
+  buttons = xbc.read()
+  if buttons[-1] == 1:      # Make sure that the last item in buttons[] is the reset_button
+    # if the reset_button is pressed,
+    # it will reset start_time, ball_detected, and the ball position and width
+    start_time = time.time()
+    ball_detected = False
+    ball_x = -1
+    ball_y = -1
+    ball_width = -1
+  else:
+    csv_writer.writerow({       # If you add anything else, UPDATE field_names and xbc.read()
+      field_names[0]:   time_elapsed,
+      field_names[1]:   ball_detected,
+      field_names[2]:   ball_x,
+      field_names[3]:   ball_y,
+      field_names[4]:   ball_width,
+      field_names[5]:   buttons[0], # Left joystick x
+      field_names[6]:   buttons[1], # Left joystick y
+      field_names[7]:   buttons[2], # RT intensity
+      field_names[8]:   buttons[3], # LT intensity
+      field_names[9]:   buttons[4], # X
+      field_names[10]:  buttons[5], # B
+      field_names[11]:  buttons[6]  # A
+    })
+
+  # if ball_detected:
+  # # TODO Do actions if ball was detected
+  #   ball_detected_action()
+  # else:
+  # # TODO if ball was not detected
+  #   ball_not_detected_action(start_time)
+
   # Display the frame
   cv.imshow('my webcam', img)
 
   # Press ESC to quit
-  if cv.waitKey(1) == 27: 
+  if cv.waitKey(1) == 27:
     break
 
-  if ball_detected:
-  # TODO Do actions if ball was detected
-    # press(key=JUMP, sec=1)
-    r = random.randint(1,3)
-  else:
-  # TODO if ball was not detected
-  # keyboard
-    # if initial_move == 0.0:
-    #   press(key=FORWARD, sec=2)
-    #   initial_move = time.time()
-    # current_time = time.time()
-    # if current_time - initial_move > 3.0:
-    #   if zig == 0.0:
-    #     pressKey(key=FORWARD)
-    #     press(key=LEFT, sec=1)
-    #     releaseKey(key=FORWARD)
-    #     zig = time.time()
-    #   else:
-    #     current_time = time.time()
-    #     time_elapsed = current_time - zig
-    #     if not zag and (time_elapsed > 3.0):
-    #       pressKey(key=FORWARD)
-    #       press(key=RIGHT, sec=1)
-    #       releaseKey(key=FORWARD)
-    #       zag = True
-    #     else:
-    #       if time_elapsed > 6.0:
-    #         zig = 0.0
-    #         zag = False
-  # gamepad
-    # if initial_move == 0.0:
-    #   gamepad.right_trigger_float(1.0)
-    #   initial_move = time.time()
-    # current_time = time.time()
-    # if current_time - initial_move > 3.0:
-    #   if zig == 0.0:
-    #     gamepad.left_joystick_float(x_value_float=-0.5, y_value_float=0.5)
-    #     gamepad.right_trigger_float(0.5)
-    #     zig = time.time()
-    #   else:
-    #     time_elapsed = current_time - zig
-    #     if not zag and (time_elapsed > 3.0):
-    #       gamepad.left_joystick_float(x_value_float=0.5, y_value_float=0.5)
-    #       gamepad.right_trigger_float(0.5)
-    #       zag = True
-    #     else:
-    #       if time_elapsed > 6.0:
-    #         zig = 0.0
-    #         zag = False
-    # # gamepad.left_joystick_float(x_value_float=-0.5, y_value_float=0.5)
-    # # gamepad.right_trigger_float(0.5)
-    # gamepad.update()
-
-    current_time = time.time()
-    diff_time = current_time - start_time
-    if diff_time < 2.0:
-      gamepad.right_trigger_float(1.0)
-      gamepad.update()
-    else:
-      if 5.0 < diff_time < 6.0:
-        gamepad.left_joystick_float(x_value_float=-0.5, y_value_float=0.5)
-        gamepad.right_trigger_float(0.5)
-        gamepad.update()
-      elif 9.0 < diff_time < 10.0:
-        gamepad.left_joystick_float(x_value_float=1.0, y_value_float=0.5)
-        gamepad.right_trigger_float(0.5)
-        gamepad.update()
-      elif 11.0 < diff_time < 12.0:
-        gamepad.left_joystick_float(x_value_float=0.0, y_value_float=0.0)
-        gamepad.right_trigger_float(0.5)
-        gamepad.update()
-      elif 15.0 < diff_time < 16.0:
-        gamepad.left_joystick_float(x_value_float=-1, y_value_float=0.5)
-        gamepad.right_trigger_float(0.5)
-        gamepad.update()
-      else:
-        gamepad.reset()
-        gamepad.update()
- 
+#-------------------------------------------------------------------------------------------------------
+# EXIT FROM MAIN LOOP
+#-------------------------------------------------------------------------------------------------------
 # Stop filming
 cam.release()
- 
+
 # Close down OpenCV
 cv.destroyAllWindows()
+
+# Close file
+csv_file.close()
