@@ -53,7 +53,7 @@ class XboxController(object):
     self._monitor_thread.daemon = True
     self._monitor_thread.start()
 
-  def read(self): # return the buttons/triggers that you care about in this methode
+  def read(self): # return the buttons/triggers that you care about in this method
     x = self.LeftJoystickX
     y = self.LeftJoystickY
     rt = self.RightTrigger
@@ -61,8 +61,9 @@ class XboxController(object):
     X = self.X # b=1, x=2
     A = self.A
     B = self.B
-    reset_button = self.LeftThumb
-    return [x, y, rt, lt, X, A, B, reset_button]
+    end_button = self.RightBumper
+    reset_button = self.LeftBumper
+    return [x, y, rt, lt, X, A, B, end_button, reset_button] # make sure that the last two items are end_button and reset_button
 
   def _monitor_controller(self):
     while True:
@@ -164,7 +165,9 @@ field_names = [
   "LT_intensity",
   "btn_X",
   "btn_A",
-  "btn_B"
+  "btn_B",
+  "reset",
+  "end"
 ]
 csv_writer = csv.DictWriter(csv_file, fieldnames=field_names)
 # TODO only writeheader when starting a new csv file to store data in
@@ -237,12 +240,18 @@ RL.activate()
 start_time = time.time()
 
 while True:
+  # start with ball not detected
+  # ball_x = -1
+  # ball_y = -1
+  # ball_width = -1
+  # ball_detected = False
+
   # Read in the frame
   ret_val, img = cam.read()
   rows = img.shape[0]
   cols = img.shape[1]
-  w = 600
-  h = 600
+  w = 900
+  h = 900
   cvNet.setInput(cv.dnn.blobFromImage(img, size=(w, h), swapRB=True, crop=False)) # default size=(300,300)
  
   # Run object detection
@@ -255,7 +264,7 @@ while True:
   # Go through each object detected and label it
   for detection in cvOut[0,0,:,:]:
     score = float(detection[2])
-    if score > 0.7:
+    if score > 0.2:
  
       idx = int(detection[1])   # prediction class index. 
  
@@ -282,33 +291,39 @@ while True:
         # (image, text, point, font face, font scale, color, thickness)
         cv.putText(img, label, (int(left), int(y)), cv.FONT_HERSHEY_SIMPLEX, 0.75, (0,0,255), 2)
 
-  #TODO write to csv file
-  #datetime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(current_time))
-  #print(xbc.read())
+  # reads the gamepad buttons
   buttons = xbc.read()
+
+  csv_writer.writerow({       # If you add anything else, UPDATE field_names and xbc.read()
+    field_names[0]:   time_elapsed,
+    field_names[1]:   ball_detected,
+    field_names[2]:   ball_x,
+    field_names[3]:   ball_y,
+    field_names[4]:   ball_width,
+    field_names[5]:   buttons[0], # Left joystick x
+    field_names[6]:   buttons[1], # Left joystick y
+    field_names[7]:   buttons[2], # RT intensity
+    field_names[8]:   buttons[3], # LT intensity
+    field_names[9]:   buttons[4], # X
+    field_names[10]:  buttons[5], # B
+    field_names[11]:  buttons[6], # A
+    field_names[12]:  buttons[-1],# reset_button
+    field_names[13]:  buttons[-2] # end_button
+  })
+
   if buttons[-1] == 1:      # Make sure that the last item in buttons[] is the reset_button
-    # if the reset_button is pressed,
-    # it will reset start_time, ball_detected, and the ball position and width
-    start_time = time.time()
+  #   # if the reset_button is pressed,
+  #   # it will reset start_time, ball_detected, and the ball position and width
+    # start_time = time.time()
     ball_detected = False
     ball_x = -1
     ball_y = -1
     ball_width = -1
-  else:
-    csv_writer.writerow({       # If you add anything else, UPDATE field_names and xbc.read()
-      field_names[0]:   time_elapsed,
-      field_names[1]:   ball_detected,
-      field_names[2]:   ball_x,
-      field_names[3]:   ball_y,
-      field_names[4]:   ball_width,
-      field_names[5]:   buttons[0], # Left joystick x
-      field_names[6]:   buttons[1], # Left joystick y
-      field_names[7]:   buttons[2], # RT intensity
-      field_names[8]:   buttons[3], # LT intensity
-      field_names[9]:   buttons[4], # X
-      field_names[10]:  buttons[5], # B
-      field_names[11]:  buttons[6]  # A
-    })
+
+  if buttons[-2] == 1:      # Make sure that the second to last item in buttons[] is the end_button
+    # if the end_button is pressed,
+    # end the AI-Gamer program by exiting out of the main while loop
+    break
 
   # if ball_detected:
   # # TODO Do actions if ball was detected
