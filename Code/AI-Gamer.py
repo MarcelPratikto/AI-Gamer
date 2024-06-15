@@ -165,7 +165,7 @@ field_names = [
   "LT_intensity",
   "btn_X",
   "btn_A",
-  "btn_B",
+  "btn_B",  # TODO add btn_Y? change difficulty to goalie not rookie?
   "reset",
   "end"
 ]
@@ -333,7 +333,7 @@ while True:
   #   ball_not_detected_action(start_time)
 
   # Display the frame
-  cv.imshow('my webcam', img)
+  cv.imshow('AI-Gamer', img)
 
   # Press ESC to quit
   if cv.waitKey(1) == 27:

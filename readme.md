@@ -31,10 +31,14 @@ TODO: Train AI Neural Network using my gameplay style
     * https://colab.research.google.com/gist/MarcelPratikto/d62275bac7d93282a885eb4e5c98717b/simple_nn_example.ipynb#scrollTo=w1jKaZouuVta
 
 Multi Output Regressor:
+* https://gist.github.com/MarcelPratikto/d62275bac7d93282a885eb4e5c98717b
+* https://medium.com/@tubelwj/developing-multi-class-regression-models-with-python-c8beca5dd482
 * https://scikit-learn.org/stable/modules/generated/sklearn.multioutput.MultiOutputRegressor.html
 * https://stackoverflow.com/questions/57704609/multi-target-regression-using-scikit-learn
-* https://medium.com/@tubelwj/developing-multi-class-regression-models-with-python-c8beca5dd482
 * https://machinelearningmastery.com/multi-output-regression-models-with-python/
+
+My ML model:
+* https://colab.research.google.com/drive/1p0dx8kcFgv25ZtLTsFrDm-mUqmSyD1tg#scrollTo=vEjxMsHGNuHP
 
 Categories:
 * Input
@@ -51,3 +55,5 @@ Categories:
     * X button pressed
     * A button pressed
     * B button pressed
+    * reset_button pressed
+    * end_button pressed
