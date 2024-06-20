@@ -12,103 +12,8 @@ import cv2 as cv    # OpenCV computer vision library
 import numpy as np  # Scientific computing library
 import time         # 
 import pyautogui    # switch focus between programs
-import csv
-import os.path
-# gamepad related stuff
-import vgamepad as vg
-from inputs import get_gamepad
-import math
-import threading
-
-#-------------------------------------------------------------------------------------------------------
-# XBOX Controller Class
-#-------------------------------------------------------------------------------------------------------
-class XboxController(object):
-  MAX_TRIG_VAL = math.pow(2, 8)
-  MAX_JOY_VAL = math.pow(2, 15)
-
-  def __init__(self):
-    self.LeftJoystickY = 0
-    self.LeftJoystickX = 0
-    self.RightJoystickY = 0
-    self.RightJoystickX = 0
-    self.LeftTrigger = 0
-    self.RightTrigger = 0
-    self.LeftBumper = 0
-    self.RightBumper = 0
-    self.A = 0
-    self.X = 0
-    self.Y = 0
-    self.B = 0
-    self.LeftThumb = 0
-    self.RightThumb = 0
-    self.Back = 0
-    self.Start = 0
-    self.LeftDPad = 0
-    self.RightDPad = 0
-    self.UpDPad = 0
-    self.DownDPad = 0
-
-    self._monitor_thread = threading.Thread(target=self._monitor_controller, args=())
-    self._monitor_thread.daemon = True
-    self._monitor_thread.start()
-
-  def read(self): # return the buttons/triggers that you care about in this method
-    x = self.LeftJoystickX
-    y = self.LeftJoystickY
-    rt = self.RightTrigger
-    lt = self.LeftTrigger
-    X = self.X # b=1, x=2
-    A = self.A
-    B = self.B
-    end_button = self.RightBumper
-    reset_button = self.LeftBumper
-    return [x, y, rt, lt, X, A, B, end_button, reset_button] # make sure that the last two items are end_button and reset_button
-
-  def _monitor_controller(self):
-    while True:
-      events = get_gamepad()
-      for event in events:
-        if event.code == 'ABS_Y':
-          self.LeftJoystickY = event.state / XboxController.MAX_JOY_VAL # normalize between -1 and 1
-        elif event.code == 'ABS_X':
-          self.LeftJoystickX = event.state / XboxController.MAX_JOY_VAL # normalize between -1 and 1
-        elif event.code == 'ABS_RY':
-          self.RightJoystickY = event.state / XboxController.MAX_JOY_VAL # normalize between -1 and 1
-        elif event.code == 'ABS_RX':
-          self.RightJoystickX = event.state / XboxController.MAX_JOY_VAL # normalize between -1 and 1
-        elif event.code == 'ABS_Z':
-          self.LeftTrigger = event.state / XboxController.MAX_TRIG_VAL # normalize between 0 and 1
-        elif event.code == 'ABS_RZ':
-          self.RightTrigger = event.state / XboxController.MAX_TRIG_VAL # normalize between 0 and 1
-        elif event.code == 'BTN_TL':
-          self.LeftBumper = event.state
-        elif event.code == 'BTN_TR':
-          self.RightBumper = event.state
-        elif event.code == 'BTN_SOUTH':
-          self.A = event.state
-        elif event.code == 'BTN_NORTH':
-          self.Y = event.state #previously switched with X
-        elif event.code == 'BTN_WEST':
-          self.X = event.state #previously switched with Y
-        elif event.code == 'BTN_EAST':
-          self.B = event.state
-        elif event.code == 'BTN_THUMBL':
-          self.LeftThumb = event.state
-        elif event.code == 'BTN_THUMBR':
-          self.RightThumb = event.state
-        elif event.code == 'BTN_SELECT':
-          self.Back = event.state
-        elif event.code == 'BTN_START':
-          self.Start = event.state
-        elif event.code == 'BTN_TRIGGER_HAPPY1':
-          self.LeftDPad = event.state
-        elif event.code == 'BTN_TRIGGER_HAPPY2':
-          self.RightDPad = event.state
-        elif event.code == 'BTN_TRIGGER_HAPPY3':
-          self.UpDPad = event.state
-        elif event.code == 'BTN_TRIGGER_HAPPY4':
-          self.DownDPad = event.state
+import pickle       # load ML model
+import vgamepad as vg   # gamepad related stuff
 
 #-------------------------------------------------------------------------------------------------------
 # OPENCV
@@ -142,45 +47,19 @@ pb  = 'Code/frozen_inference_graph.pb'
 pbt = 'Code/ssd_inception_v2_coco_2017_11_17.pbtxt'
 
 # Read the neural network
-cvNet = cv.dnn.readNetFromTensorflow(pb,pbt)   
+cvNet = cv.dnn.readNetFromTensorflow(pb,pbt)
 
 #-------------------------------------------------------------------------------------------------------
-# GAMEPAD, CSV
+# ML model
 #-------------------------------------------------------------------------------------------------------
-# TODO Save gamepad controls to csv file to train AI model
-csv_file_path = "Code/sample.csv"
-is_file_new = True
-if os.path.isfile(csv_file_path): # if file already exist, it is not new and we don't need to csv_writer.writeheader()
-  is_file_new = False
-csv_file = open(csv_file_path, "a", newline="")
-field_names = [
-  "time_elapsed",
-  "ball_detected",
-  "ball_x",
-  "ball_y",
-  "ball_width",
-  "joystick_x",
-  "joystick_y",
-  "RT_intensity",
-  "LT_intensity",
-  "btn_X",
-  "btn_A",
-  "btn_B",  # TODO add btn_Y? change difficulty to goalie not rookie?
-  "reset",
-  "end"
-]
-csv_writer = csv.DictWriter(csv_file, fieldnames=field_names)
-# TODO only writeheader when starting a new csv file to store data in
-if is_file_new:
-  csv_writer.writeheader()
+model = pickle.load(open("Code/model.pkl", "rb"))
 
+#-------------------------------------------------------------------------------------------------------
+# GAMEPAD
+#-------------------------------------------------------------------------------------------------------
 # TODO activate gamepad
 # Only activate when NOT storing gamepad inputs to csv file
-# gamepad = vg.VX360Gamepad()
-
-# TODO xbox controller for monitoring inputs
-# Only activate when storing gamepad inputs to csv file
-xbc = XboxController()
+gamepad = vg.VX360Gamepad()
 
 #-------------------------------------------------------------------------------------------------------
 # BALL
@@ -193,41 +72,6 @@ ball_width = -1
 
 # start with ball not detected
 ball_detected = False
-
-# TODO if ball is detected
-def ball_detected_action():
-  # gamepad.reset()
-  # gamepad.update()
-  return
-
-# TODO if ball is NOT detected
-def ball_not_detected_action(start_time):
-  #   current_time = time.time()
-  #   diff_time = current_time - start_time
-  #   if diff_time < 2.0:
-  #     gamepad.right_trigger_float(1.0)
-  #     gamepad.update()
-  #   else:
-  #     if 5.0 < diff_time < 6.0:
-  #       gamepad.left_joystick_float(x_value_float=-0.5, y_value_float=0.5)
-  #       gamepad.right_trigger_float(0.5)
-  #       gamepad.update()
-  #     elif 9.0 < diff_time < 10.0:
-  #       gamepad.left_joystick_float(x_value_float=1.0, y_value_float=0.5)
-  #       gamepad.right_trigger_float(0.5)
-  #       gamepad.update()
-  #     elif 11.0 < diff_time < 12.0:
-  #       gamepad.left_joystick_float(x_value_float=0.0, y_value_float=0.0)
-  #       gamepad.right_trigger_float(0.5)
-  #       gamepad.update()
-  #     elif 15.0 < diff_time < 16.0:
-  #       gamepad.left_joystick_float(x_value_float=-1, y_value_float=0.5)
-  #       gamepad.right_trigger_float(0.5)
-  #       gamepad.update()
-  #     else:
-  #       gamepad.reset()
-  #       gamepad.update()
-  return
 
 #-------------------------------------------------------------------------------------------------------
 # MAIN LOOP
@@ -291,27 +135,36 @@ while True:
         # (image, text, point, font face, font scale, color, thickness)
         cv.putText(img, label, (int(left), int(y)), cv.FONT_HERSHEY_SIMPLEX, 0.75, (0,0,255), 2)
 
-  # reads the gamepad buttons
-  buttons = xbc.read()
+  # use the ml model to make predictions on what buttons on the gamepad are pressed & how intensely if possible
+  buttons = model.predict([[
+        time_elapsed,
+        ball_detected,
+        ball_x,
+        ball_y,
+        ball_width
+    ]])
+  
+  joystick_x = buttons[0][0]
+  joystick_y = buttons[0][1]
+  RT_intensity = buttons[0][2]
+  LT_intensity = buttons[0][3]
+  btn_X = buttons[0][4]
+  btn_A = buttons[0][5]
+  btn_B = buttons[0][6]
+  reset = buttons[0][7]
 
-  csv_writer.writerow({       # If you add anything else, UPDATE field_names and xbc.read()
-    field_names[0]:   time_elapsed,
-    field_names[1]:   ball_detected,
-    field_names[2]:   ball_x,
-    field_names[3]:   ball_y,
-    field_names[4]:   ball_width,
-    field_names[5]:   buttons[0], # Left joystick x
-    field_names[6]:   buttons[1], # Left joystick y
-    field_names[7]:   buttons[2], # RT intensity
-    field_names[8]:   buttons[3], # LT intensity
-    field_names[9]:   buttons[4], # X
-    field_names[10]:  buttons[5], # B
-    field_names[11]:  buttons[6], # A
-    field_names[12]:  buttons[-1],# reset_button
-    field_names[13]:  buttons[-2] # end_button
-  })
+  gamepad.left_joystick_float(x_value_float=joystick_x, y_value_float=joystick_y)
+  gamepad.right_trigger_float(RT_intensity)
+  gamepad.left_trigger_float(LT_intensity)
+  if btn_X:
+    gamepad.press_button(button=vg.XUSB_BUTTON.XUSB_GAMEPAD_X)
+  if btn_A:
+    gamepad.press_button(button=vg.XUSB_BUTTON.XUSB_GAMEPAD_A)
+  if btn_B:
+    gamepad.press_button(button=vg.XUSB_BUTTON.XUSB_GAMEPAD_B)
+  gamepad.update()
 
-  if buttons[-1] == 1:      # Make sure that the last item in buttons[] is the reset_button
+  if reset == 1:      # Make sure that the last item in buttons[] is the reset_button
   #   # if the reset_button is pressed,
   #   # it will reset start_time, ball_detected, and the ball position and width
     # start_time = time.time()
@@ -319,18 +172,6 @@ while True:
     ball_x = -1
     ball_y = -1
     ball_width = -1
-
-  if buttons[-2] == 1:      # Make sure that the second to last item in buttons[] is the end_button
-    # if the end_button is pressed,
-    # end the AI-Gamer program by exiting out of the main while loop
-    break
-
-  # if ball_detected:
-  # # TODO Do actions if ball was detected
-  #   ball_detected_action()
-  # else:
-  # # TODO if ball was not detected
-  #   ball_not_detected_action(start_time)
 
   # Display the frame
   cv.imshow('AI-Gamer', img)
@@ -347,6 +188,3 @@ cam.release()
 
 # Close down OpenCV
 cv.destroyAllWindows()
-
-# Close file
-csv_file.close()
