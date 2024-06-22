@@ -15,7 +15,6 @@ import pyautogui    # switch focus between programs
 import csv
 import os.path
 # gamepad related stuff
-import vgamepad as vg
 from inputs import get_gamepad
 import math
 import threading
@@ -147,7 +146,7 @@ cvNet = cv.dnn.readNetFromTensorflow(pb,pbt)
 #-------------------------------------------------------------------------------------------------------
 # GAMEPAD, CSV
 #-------------------------------------------------------------------------------------------------------
-# TODO Save gamepad controls to csv file to train AI model
+# Save gamepad controls to csv file to train AI model
 csv_file_path = "Code/sample.csv"
 is_file_new = True
 if os.path.isfile(csv_file_path): # if file already exist, it is not new and we don't need to csv_writer.writeheader()
@@ -170,15 +169,11 @@ field_names = [
   "end"
 ]
 csv_writer = csv.DictWriter(csv_file, fieldnames=field_names)
-# TODO only writeheader when starting a new csv file to store data in
+# only writeheader when starting a new csv file to store data in
 if is_file_new:
   csv_writer.writeheader()
 
-# TODO activate gamepad
-# Only activate when NOT storing gamepad inputs to csv file
-# gamepad = vg.VX360Gamepad()
-
-# TODO xbox controller for monitoring inputs
+# xbox controller for monitoring inputs
 # Only activate when storing gamepad inputs to csv file
 xbc = XboxController()
 
@@ -193,41 +188,6 @@ ball_width = -1
 
 # start with ball not detected
 ball_detected = False
-
-# TODO if ball is detected
-def ball_detected_action():
-  # gamepad.reset()
-  # gamepad.update()
-  return
-
-# TODO if ball is NOT detected
-def ball_not_detected_action(start_time):
-  #   current_time = time.time()
-  #   diff_time = current_time - start_time
-  #   if diff_time < 2.0:
-  #     gamepad.right_trigger_float(1.0)
-  #     gamepad.update()
-  #   else:
-  #     if 5.0 < diff_time < 6.0:
-  #       gamepad.left_joystick_float(x_value_float=-0.5, y_value_float=0.5)
-  #       gamepad.right_trigger_float(0.5)
-  #       gamepad.update()
-  #     elif 9.0 < diff_time < 10.0:
-  #       gamepad.left_joystick_float(x_value_float=1.0, y_value_float=0.5)
-  #       gamepad.right_trigger_float(0.5)
-  #       gamepad.update()
-  #     elif 11.0 < diff_time < 12.0:
-  #       gamepad.left_joystick_float(x_value_float=0.0, y_value_float=0.0)
-  #       gamepad.right_trigger_float(0.5)
-  #       gamepad.update()
-  #     elif 15.0 < diff_time < 16.0:
-  #       gamepad.left_joystick_float(x_value_float=-1, y_value_float=0.5)
-  #       gamepad.right_trigger_float(0.5)
-  #       gamepad.update()
-  #     else:
-  #       gamepad.reset()
-  #       gamepad.update()
-  return
 
 #-------------------------------------------------------------------------------------------------------
 # MAIN LOOP
@@ -324,13 +284,6 @@ while True:
     # if the end_button is pressed,
     # end the AI-Gamer program by exiting out of the main while loop
     break
-
-  # if ball_detected:
-  # # TODO Do actions if ball was detected
-  #   ball_detected_action()
-  # else:
-  # # TODO if ball was not detected
-  #   ball_not_detected_action(start_time)
 
   # Display the frame
   cv.imshow('AI-Gamer', img)
