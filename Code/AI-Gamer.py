@@ -152,6 +152,7 @@ while True:
   btn_A = buttons[0][5]
   btn_B = buttons[0][6]
   reset = buttons[0][7]
+  end = buttons[0][8]
 
   gamepad.left_joystick_float(x_value_float=joystick_x, y_value_float=joystick_y)
   gamepad.right_trigger_float(RT_intensity)
@@ -162,6 +163,9 @@ while True:
     gamepad.press_button(button=vg.XUSB_BUTTON.XUSB_GAMEPAD_A)
   if btn_B:
     gamepad.press_button(button=vg.XUSB_BUTTON.XUSB_GAMEPAD_B)
+  if round(end) == 1:
+    #gamepad.press_button(button=vg.XUSB_BUTTON.XUSB_GAMEPAD_RIGHT_SHOULDER)
+    break
   gamepad.update()
 
   if reset == 1:      # Make sure that the last item in buttons[] is the reset_button
@@ -174,7 +178,7 @@ while True:
     ball_width = -1
 
   # Display the frame
-  cv.imshow('AI-Gamer', img)
+  #cv.imshow('AI-Gamer', img)
 
   # Press ESC to quit
   if cv.waitKey(1) == 27:

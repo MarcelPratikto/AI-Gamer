@@ -60,9 +60,10 @@ class XboxController(object):
     X = self.X # b=1, x=2
     A = self.A
     B = self.B
+    rightDPad = self.RightDPad
     end_button = self.RightBumper
     reset_button = self.LeftBumper
-    return [x, y, rt, lt, X, A, B, end_button, reset_button] # make sure that the last two items are end_button and reset_button
+    return [x, y, rt, lt, X, A, B, rightDPad, end_button, reset_button] # make sure that the last two items are end_button and reset_button
 
   def _monitor_controller(self):
     while True:
@@ -164,7 +165,7 @@ field_names = [
   "LT_intensity",
   "btn_X",
   "btn_A",
-  "btn_B",  # TODO add btn_Y? change difficulty to goalie not rookie?
+  "btn_B",
   "reset",
   "end"
 ]
@@ -267,8 +268,8 @@ while True:
     field_names[9]:   buttons[4], # X
     field_names[10]:  buttons[5], # B
     field_names[11]:  buttons[6], # A
-    field_names[12]:  buttons[-1],# reset_button
-    field_names[13]:  buttons[-2] # end_button
+    field_names[13]:  buttons[-1],# reset_button
+    field_names[14]:  buttons[-2] # end_button
   })
 
   if buttons[-1] == 1:      # Make sure that the last item in buttons[] is the reset_button
