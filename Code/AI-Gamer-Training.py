@@ -166,7 +166,7 @@ field_names = [
   "btn_X",
   "btn_A",
   "btn_B",
-  "reset",
+  "reset",  # TODO KEEP TRAINING GOALIE MODE
   "end"
 ]
 csv_writer = csv.DictWriter(csv_file, fieldnames=field_names)
@@ -268,8 +268,8 @@ while True:
     field_names[9]:   buttons[4], # X
     field_names[10]:  buttons[5], # B
     field_names[11]:  buttons[6], # A
-    field_names[13]:  buttons[-1],# reset_button
-    field_names[14]:  buttons[-2] # end_button
+    field_names[12]:  buttons[-1],# reset_button
+    field_names[13]:  buttons[-2] # end_button
   })
 
   if buttons[-1] == 1:      # Make sure that the last item in buttons[] is the reset_button

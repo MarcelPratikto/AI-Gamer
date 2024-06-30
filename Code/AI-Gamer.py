@@ -163,22 +163,25 @@ while True:
     gamepad.press_button(button=vg.XUSB_BUTTON.XUSB_GAMEPAD_A)
   if btn_B:
     gamepad.press_button(button=vg.XUSB_BUTTON.XUSB_GAMEPAD_B)
-  if round(end) == 1:
-    #gamepad.press_button(button=vg.XUSB_BUTTON.XUSB_GAMEPAD_RIGHT_SHOULDER)
-    break
-  gamepad.update()
-
-  if reset == 1:      # Make sure that the last item in buttons[] is the reset_button
-  #   # if the reset_button is pressed,
-  #   # it will reset start_time, ball_detected, and the ball position and width
-    # start_time = time.time()
+  if reset:      # Make sure that the last item in buttons[] is the reset_button
+  #   # if the reset_button is pressed
+    gamepad.press_button(button=vg.XUSB_BUTTON.XUSB_GAMEPAD_LEFT_SHOULDER)
     ball_detected = False
     ball_x = -1
     ball_y = -1
     ball_width = -1
+    # gamepad.reset()
+    # gamepad.update()
+  gamepad.update()
+
+  if round(end) >= 1:
+    #gamepad.press_button(button=vg.XUSB_BUTTON.XUSB_GAMEPAD_RIGHT_SHOULDER)
+    gamepad.reset()
+    gamepad.update()
+    break
 
   # Display the frame
-  #cv.imshow('AI-Gamer', img)
+  cv.imshow('AI-Gamer', img)
 
   # Press ESC to quit
   if cv.waitKey(1) == 27:
