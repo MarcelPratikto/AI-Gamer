@@ -1,7 +1,7 @@
 #from sklearn.tree import DecisionTreeRegressor
 import pickle
 
-model = pickle.load(open("Code/model.pkl", "rb"))
+model = pickle.load(open("Code/Old-Samples-Models/model.pkl", "rb"))
 
 # print("10s: ")
 # print(model.predict([[10,False,-1,-1,-1]]))
@@ -21,9 +21,9 @@ model = pickle.load(open("Code/model.pkl", "rb"))
 
 reset = False
 seconds = 0
-while not reset:
+while seconds < 200:
     prediction = model.predict([[seconds,False,-1,-1,-1]])
     seconds += 1
     reset = prediction[0][7]
-
-print(f"seconds: {seconds}")
+    if reset:
+        print(f"seconds: {seconds}")
