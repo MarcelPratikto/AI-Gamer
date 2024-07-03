@@ -166,7 +166,7 @@ field_names = [
   "btn_X",
   "btn_A",
   "btn_B",
-  "reset",  # TODO KEEP TRAINING GOALIE MODE
+  "reset",  # TODO Train on freestyle mode
   "end"
 ]
 csv_writer = csv.DictWriter(csv_file, fieldnames=field_names)
