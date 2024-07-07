@@ -26,7 +26,8 @@ I spent a long time creating multiple different datasets that covers different g
 
 **Plans / Goals for next week:**
 
-1. More dataset training.
+1. Present my SPED Talk
+2. More dataset training.
 
 **Accountability plan: (What is your plan to keep yourself honest and follow through with the goals that you have outlined?)**
 
